@@ -1,42 +1,13 @@
-<h1 align="center">
+<div align="center">
+  <img src="https://builtbybit.com/attachments/bbb-banner-2026-png.1280678/?preset=cardr1" alt="EcoItems Banner">
+  <h1>✨ EcoItems (Auto-Build Repository)</h1>
+  <p><b>This is an automated build repository synchronized with the <a href="https://github.com/Auxilor/EcoItems">Auxilor/EcoItems</a></b></p>
+  <p>We provide freshly built <code>.jar</code> files directly from the latest upstream source code.</p>
   <br>
-  <img src="https://i.imgur.com/RyDFLgg.png" alt="EcoItems logo" width="256">
-  <br>
-</h1>
+  <a href="https://github.com/Adivise/EcoItems/releases">
+    <img alt="Download Auto-Build" src="https://img.shields.io/github/v/release/Adivise/EcoItems?color=success&label=Download&style=for-the-badge"/>
+  </a>
+</div>
 
-<h4 align="center">Source code for EcoItems, a premium spigot plugin.</h4>
-
-<p align="center">
-    <a href="https://polymart.org/resource/ecoitems.1241">
-        <img alt="spigot" src="https://img.shields.io/badge/polymart-ecoitems-ff0000?style=for-the-badge"/>
-    </a>
-    <a href="https://bstats.org/plugin/bukkit/EcoItems" alt="bstats servers">
-        <img src="https://img.shields.io/bstats/servers/12205?color=ff0000&style=for-the-badge"/>
-    </a>
-    <a href="https://bstats.org/plugin/bukkit/EcoItems" alt="bstats players">
-        <img src="https://img.shields.io/bstats/players/12205?color=ff0000&style=for-the-badge"/>
-    </a>
-    <a href="https://plugins.auxilor.io/ecoitems/" alt="Docs (gitbook)">
-        <img src="https://img.shields.io/badge/docs-gitbook-ff0000?style=for-the-badge&logo=appveyor"/>
-    </a>
-    <a href="https://discord.gg/ZcwpSsE/" alt="Discord">
-        <img src="https://img.shields.io/discord/452518336627081236?label=discord&style=for-the-badge&color=ff0000"/>
-    </a>
-</p>
-
-
-[![Picture](https://i.imgur.com/z37jIZt.png)](https://plugins.auxilor.io/ecoitems)
-
-## License
-*Click here to read [the entire license](https://github.com/Auxilor/EcoItems/blob/master/LICENSE.md).*
-
-<h1 align="center">
-  <br>
-    <a href="http://gamersupps.gg/discount/Auxilor?afmc=Auxilor" target="_blank">
-      <img src="https://i.imgur.com/uFDpBAC.png" alt="supps banner">
-    </a>
-    <a href="https://dedimc.promo/Auxilor" target="_blank">
-      <img src="https://i.imgur.com/zdDLhFA.png" alt="dedimc banner">
-    </a>
-  <br>
-</h1>
+<br>
+<hr>
