@@ -2,6 +2,8 @@ package com.willfp.ecoitems.blocks
 
 import com.willfp.eco.core.integrations.antigrief.AntigriefManager
 import com.willfp.eco.core.drops.DropQueue
+import com.willfp.eco.util.useItemOn
+import com.willfp.ecoitems.api.event.EcoBlockDropEvent
 import com.willfp.ecoitems.libreforge.ContentEvent
 import com.willfp.libreforge.drops.LibreforgeDrops
 import com.willfp.libreforge.triggers.event.DropCause
@@ -89,9 +91,9 @@ object BlockListener : Listener {
     }
 
     /**
-     * Right-clicking a custom note block would tune it (and string blocks
-     * would connect hooks) - deny the vanilla block use. Item use still
-     * proceeds, so placing against custom blocks keeps working.
+     * Right-clicking a custom note block would tune it - deny the vanilla
+     * block use. The other backings have no block use, and sneaking with an
+     * item skips it in vanilla, so those clicks are left alone.
      */
     @EventHandler(priority = EventPriority.LOWEST)
     fun onInteractCustomBlock(event: PlayerInteractEvent) {
@@ -100,9 +102,38 @@ object BlockListener : Listener {
         }
 
         val block = event.clickedBlock ?: return
-        if (EcoBlocks.at(block) != null) {
-            event.setUseInteractedBlock(Event.Result.DENY)
+        if (block.type != Material.NOTE_BLOCK || EcoBlocks.at(block) == null) {
+            return
         }
+
+        val inventory = event.player.inventory
+        if (event.player.isSneaking && !(inventory.itemInMainHand.isEmpty && inventory.itemInOffHand.isEmpty)) {
+            return
+        }
+
+        event.setUseInteractedBlock(Event.Result.DENY)
+    }
+
+    /**
+     * Denying the block use also skips the held item, so run its vanilla
+     * use here: torches, buttons and the like go on custom note blocks as
+     * they would on any solid block.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    fun onUseItemOnCustomBlock(event: PlayerInteractEvent) {
+        if (event.action != Action.RIGHT_CLICK_BLOCK) {
+            return
+        }
+        if (event.useInteractedBlock() != Event.Result.DENY || event.useItemInHand() == Event.Result.DENY) {
+            return
+        }
+
+        val block = event.clickedBlock ?: return
+        if (block.type != Material.NOTE_BLOCK || EcoBlocks.at(block) == null) {
+            return
+        }
+
+        event.player.useItemOn(event.hand ?: return, block, event.blockFace, event.clickedPosition)
     }
 
     /** Punch / right-click effects on placed custom blocks. */
@@ -396,7 +427,8 @@ object BlockListener : Listener {
                 worldBlock.location.add(0.5, 0.5, 0.5),
                 tool,
                 player,
-                worldBlock
+                worldBlock,
+                blockId = block.id
             ) { plugin.logger.warning("Crop ${block.id} drop '$it' is not a valid item") }
             return
         }
@@ -410,8 +442,44 @@ object BlockListener : Listener {
             tool,
             player,
             worldBlock,
-            placed.stackSize
+            placed.stackSize,
+            blockId = block.id
         ) { plugin.logger.warning("Block ${block.id} drop '$it' is not a valid item") }
+    }
+
+    /**
+     * The drops for a break of [worldBlock] with [tool] that something other
+     * than a player makes, such as a minion, rolled without dropping anything,
+     * or null if it is not a custom block. A null [tool] ignores tool
+     * requirements. Fires [EcoBlockDropEvent] with no player.
+     */
+    fun dropsFor(worldBlock: Block, tool: ItemStack?): List<ItemStack>? {
+        val placed = EcoBlocks.at(worldBlock) ?: return null
+        val block = placed.block
+
+        if (!canHarvest(block, tool)) {
+            return emptyList()
+        }
+
+        val self = EcoItems.getByID(block.id)?.itemStack
+        val crop = block.crop
+        val rolls = if (crop != null) {
+            val drops = if (placed.orientation >= crop.stages.lastIndex) crop.drops else crop.immatureDrops
+            listOf(rollDrops(drops, self, tool) {})
+        } else {
+            (1..placed.stackSize).map { rollDrops(block.drops, self, tool) {} }
+        }
+
+        val event = EcoBlockDropEvent(
+            worldBlock,
+            block.id,
+            null,
+            tool,
+            rolls.flatMap { it.first }.toMutableList(),
+            rolls.sumOf { it.second }
+        )
+        plugin.server.pluginManager.callEvent(event)
+        return if (event.isCancelled) emptyList() else event.items
     }
 
     /** Shared drop pipeline for blocks and furniture. */
@@ -424,15 +492,26 @@ object BlockListener : Listener {
         block: Block? = null,
         rolls: Int = 1,
         pipeline: Boolean = true,
+        blockId: String? = null,
         onInvalid: (String) -> Unit = {}
     ) {
-        val items = mutableListOf<ItemStack>()
+        var items = mutableListOf<ItemStack>()
         var xp = 0
 
         repeat(rolls) {
             val rolled = rollDrops(drops, self, tool, onInvalid)
             items += rolled.first
             xp += rolled.second
+        }
+
+        if (block != null && blockId != null) {
+            val event = EcoBlockDropEvent(block, blockId, player, tool, items, xp)
+            plugin.server.pluginManager.callEvent(event)
+            if (event.isCancelled) {
+                return
+            }
+            items = event.items
+            xp = event.xp
         }
 
         // Player breaks go through libreforge's drop pipeline: the drop effects
