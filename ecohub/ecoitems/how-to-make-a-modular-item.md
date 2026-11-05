@@ -66,6 +66,18 @@ part:
 
 Draw the texture with only these 8 greys, darkest to lightest: 34, 62, 92, 122, 152, 186, 220 and 250. The resource pack makes a copy for each material by swapping each grey for that material's palette colour, the way vanilla colours armor trims. Draw each part where it sits on the finished item, since the item stacks the part textures on top of each other.
 
+### 3D model
+
+A part can be drawn in 3D in a modular item, such as a strap behind a shield. Set `model` to a model whose `elements` use the texture `#layer0`:
+
+```yaml
+part:
+  texture: ecoitems:item/part/shield_strap # The part's own icon, and the texture the model's faces use.
+  model: ecoitems:item/part/shield_strap_3d # Read from pack/assets/ecoitems/models/item/part/shield_strap_3d.json
+```
+
+The model is written again for each material with the recoloured texture as `#layer0`, and is held the same way as the rest of the item. The part's own icon stays flat. A model with no `elements` is skipped with a warning, and the part is drawn flat.
+
 ## The structure of a modular item
 
 | Part | What it controls |
@@ -75,6 +87,8 @@ Draw the texture with only these 8 greys, darkest to lightest: 34, 62, 92, 122, 
 | **Display** | Name and lore, from the slot materials |
 | **Swapping** | Replacing one part at an anvil |
 | **Mining** | Which blocks it mines, and at what speed and tier |
+| **Repairing** | Repairing it at an anvil with its material |
+| **Animation** | Bow and crossbow pull states, shield blocking, trident throwing |
 
 ```yaml
 # === Recipe: parts of any material fit ===
@@ -136,6 +150,54 @@ Each part ingredient matches that part made from any material. When the item is 
 
 The item's stats are built from its slots: attribute modifiers and durability add up, then each `durability-multiplier` is applied. See [How to Make a Material](how-to-make-a-material) for what a slot can give. The item's own `components` and `effects` still apply on top.
 
+### Repairing
+
+With `repair-from` set to a slot ID, the item can be repaired at an anvil with any item that counts as the material in that slot, including custom items such as `ecoitems:cobalt_ingot`. Each item repairs a quarter of the item's durability and costs one level, like a vanilla repair.
+
+```yaml
+modular:
+  repair-from: head # The slot whose material repairs the item.
+```
+
+It works alongside the item's own `repair-items`, see [How to Make an Item](how-to-make-an-item). Leave both out and the item repairs only the vanilla way, for example through a `repairable` component.
+
+### Slot textures
+
+A part is drawn with its own `texture` by default. When one part sits in a different place on different items, for example a handle that is longer on a hammer than on an axe, give the item its own texture for that slot. It is recoloured per material the same way, and drawn in that slot's place in `layers`:
+
+```yaml
+modular:
+  textures:
+    handle: ecoitems:item/hammer/handle # Greyscale, recoloured per material.
+```
+
+A slot with no entry here uses its part's `texture`. Animated items use the part's `states` while pulled.
+
+### Animation
+
+Bows and crossbows change their look while pulled. Set `animation: bow` or `animation: crossbow` on the modular item, and give each part a texture per state under `states`:
+
+```yaml
+# In the part:
+part:
+  texture: ecoitems:item/part/bow_limb
+  states:
+    pulling_0: ecoitems:item/part/bow_limb_pulling_0
+    pulling_1: ecoitems:item/part/bow_limb_pulling_1
+    pulling_2: ecoitems:item/part/bow_limb_pulling_2
+
+# In the modular item:
+modular:
+  animation: bow
+  state-overlays: # Drawn on top in one state only, never recoloured.
+    pulling_2:
+      - ecoitems:item/arrow_nocked
+```
+
+A bow has the states `pulling_0`, `pulling_1` and `pulling_2`. A crossbow also has `arrow` and `rocket`, for when it is loaded. A part with no texture for a state uses its `texture`. The thresholds match vanilla, and the item's base should be a `bow` or `crossbow` so it can be drawn.
+
+Shields and tridents work the same way with `animation: shield` and `animation: trident`. A shield has the state `blocking` and a trident has `throwing`, both optional. Vanilla draws these two as 3D models, so EcoItems holds the flat item its own way: a shield at your side and up in front of you while blocking, and a trident over your shoulder while throwing. The shield's back faces you, so a 3D part such as a strap goes on the back, at z 8.5 and up. Use a `shield` or `trident` base so it can block or be thrown. A thrown trident looks like the vanilla one.
+
 ### Swapping
 
 With `swappable: true`, put the item in the left slot of an anvil and a part in the right. The part replaces the one in the first slot of its shape that has a different material, for `swap-cost` levels. The replaced part is used up, unless `swap-returns-part: true`, in which case it is given back once the new item is taken. If more than one part item has that shape, the one whose ID is the shape name is given back.
@@ -146,6 +208,8 @@ With `swappable: true`, put the item in the left slot of an anvil and a part in 
 | --- | --- |
 | `%material%` | In a part's `name`: the name of its material |
 | `%material_<slot>%` | In a modular item's `name` and `lore`: the name of the material in that slot |
+| `%ecoitems_material_count_<material>%` | Where the item is passed in with the placeholder, for example EcoScrolls scroll limits: how many of the item's slots are made of that material. With no item (PlaceholderAPI, chat, scoreboards), it is `0` |
+| `%materials_lore%` | On its own line in a modular item's `lore`: for each slot, the material's `lore` for that slot and then its own `lore`, with repeats removed |
 
 Lookups and `/ecoitems give` take materials as arguments: `material:<id>` for a part, and `<slot>:<id>` for each slot of a modular item.
 

@@ -48,11 +48,27 @@ internal fun withSource(existing: ByteArray?, source: JsonObject): ByteArray {
  * Where the generated model for [texture] lives, recoloured for [materialId] if given. Always under
  * the ecoitems namespace, so a vanilla texture never overwrites its own vanilla model.
  */
-internal fun generatedModel(texture: PackLocation, materialId: String? = null): PackLocation = PackLocation(
+internal fun generatedModel(texture: PackLocation, materialId: String? = null, pose: String? = null): PackLocation =
+    PackLocation(
+        namespace = "ecoitems",
+        path = "material" + pose?.let { "_$it" }.orEmpty() + "/${texture.namespace}/${texture.path}" +
+            materialId?.let { "_$it" }.orEmpty()
+    )
+
+/** Where the 3D [shape] model drawn with [texture] lives, recoloured for [materialId] and posed for [pose] if given. */
+internal fun shapedModel(
+    texture: PackLocation,
+    shape: PackLocation,
+    materialId: String? = null,
+    pose: String? = null
+): PackLocation = PackLocation(
     namespace = "ecoitems",
-    path = "material/${texture.namespace}/${texture.path}" + materialId?.let { "_$it" }.orEmpty()
+    path = "material_shape" + pose?.let { "_$it" }.orEmpty() + "/${shape.namespace}/${shape.path}" +
+        "/${texture.namespace}/${texture.path}" + materialId?.let { "_$it" }.orEmpty()
 )
 
-internal fun modelJson(texture: String): ByteArray = materialGson.toJson(
-    jsonObject("parent" to "minecraft:item/handheld", "textures" to jsonObject("layer0" to texture))
+internal fun modelJson(texture: String, parent: String = HANDHELD_PARENT): ByteArray = materialGson.toJson(
+    jsonObject("parent" to parent, "textures" to jsonObject("layer0" to texture))
 ).encodeToByteArray()
+
+internal const val HANDHELD_PARENT = "minecraft:item/handheld"
